@@ -1,0 +1,5 @@
+*__pycache__/
+.vscode/
+images/
+database_data/
+.DS_Store
