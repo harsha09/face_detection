@@ -8,6 +8,7 @@ from base64 import urlsafe_b64decode
 from io import BytesIO
 from db.database import connect_db
 from werkzeug.exceptions import NotFound, BadRequest
+import json
 
 
 face_recognition_model = face_recognition_models.face_recognition_model_location()
@@ -19,6 +20,17 @@ pose_predictor_68_point = dlib.shape_predictor(predictor_68_point_model)
 
 predictor_5_point_model = face_recognition_models.pose_predictor_five_point_model_location()
 pose_predictor_5_point = dlib.shape_predictor(predictor_5_point_model)
+
+
+def get_request_data(request):
+    data = request.json or request.form
+    if not data:
+        try:
+            data = json.loads(data.get_data() or '{}')
+        except json.JSONDecodeError as ex:
+            raise BadRequest('Not a proper json {}'.format(str(ex)))
+
+    return data or {}
 
 
 def _rect_to_css(rect):
@@ -128,7 +140,7 @@ def save_image_in_db(id, image_data, appid, cursor=None, con=None):
 @connect_db
 def compare_image_in_db(image_data, appid, con=None, cursor=None):
     face_encoding = get_face_encoding(image_data)
-    query = "select id from im_data where (data <-> '%s'::cube) < 0.5 and appid = %s" % (
+    query = "select id from im_data where (data <-> '%s'::cube) < 0.5 and appid = '%s'" % (
         face_encoding, appid)
 
     cursor.execute(query)

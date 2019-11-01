@@ -4,6 +4,7 @@ from auth.auth import authorize
 from auth.routes import auth_app
 from errors import errors
 from worker import make_celery
+from werkzeug.exceptions import BadRequest
 import os
 
 
@@ -29,11 +30,15 @@ def test():
 @app.route('/storeimage', methods=['POST'])
 @authorize(request=request)
 def store_image():
-    user = (request.form or {})
+    user = df.get_request_data(request)
     id = user.get('id')
     image = user.get('image')
 
-    msg = df.save_image_in_db(id, image)
+    if (not id) or (not image):
+        raise BadRequest(
+            'Invalid request body, id and image should be specified.')
+
+    msg = df.save_image_in_db(id, image, request.headers.get('app_id'))
 
     if isinstance(msg, int):
         out = {'status': 'success',
@@ -45,9 +50,12 @@ def store_image():
 @app.route('/compareimage', methods=['POST'])
 @authorize(request=request)
 def compare_image():
-    image = (request.form or {}).get('image')
-    appid = request.headers.get('app_id')
-    result = df.compare_image_in_db(image, appid)
+    image = df.get_request_data(request).get('image')
+
+    if (not image):
+        raise BadRequest('Invalid request body. image shoud be specified.')
+
+    result = df.compare_image_in_db(image, request.headers.get('app_id'))
     out = {'status': 'success', 'message': result}
 
     return jsonify(out)
@@ -56,7 +64,11 @@ def compare_image():
 @app.route('/validateimage', methods=['POST'])
 @authorize(request=request)
 def validate_image():
-    image = (request.form or {}).get('image')
+    image = df.get_request_data(request).get('image')
+
+    if not image:
+        raise BadRequest('Invalid request body. image shoud be specified.')
+
     result = df.get_facial_landmarks(image)
     out = {'status': 'success', 'message': 'image identified'}
 
@@ -66,7 +78,11 @@ def validate_image():
 @app.route('/asynccompareimage', methods=['POST'])
 @authorize(request=request)
 def async_compare_image():
-    image = (request.form or {}).get('image')
+    image = df.get_request_data(request).get('image')
+
+    if not image:
+        raise BadRequest('Invalid request body. image shoud be specified.')
+
     appid = request.headers.get('app_id')
     result = async_compare.delay(image, appid)
     out = {'status': 'success', 'request_id': result.id}

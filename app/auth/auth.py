@@ -3,7 +3,7 @@ from uuid import uuid4
 from db.database import connect_db
 from collections import namedtuple
 from functools import wraps
-from werkzeug.exceptions import Unauthorized
+from werkzeug.exceptions import Unauthorized, BadRequest
 
 
 app = namedtuple('app', ['app_id', 'app_name', 'app_key'])
@@ -45,6 +45,13 @@ def authorize(request=None):
 @connect_db
 def authorize_handler(headers, cursor=None, con=None):
     app_id, app_key = headers.get('app_id'), headers.get('app_key')
+
+    if not app_id:
+        raise BadRequest("Provide app_id in headers")
+
+    if not app_key:
+        raise BadRequest("Provide app_name in headers")
+
     query = 'select * from app where appid=%s and appkey=%s'
     cursor.execute(query, (app_id, app_key))
     result = cursor.fetchone()
