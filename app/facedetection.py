@@ -29,7 +29,7 @@ def test():
 @app.route('/storeimage', methods=['POST'])
 @authorize(request=request)
 def store_image():
-    user = request.json
+    user = (request.form or {})
     id = user.get('id')
     image = user.get('image')
 
@@ -45,7 +45,7 @@ def store_image():
 @app.route('/compareimage', methods=['POST'])
 @authorize(request=request)
 def compare_image():
-    image = request.json.get('image')
+    image = (request.form or {}).get('image')
     appid = request.headers.get('app_id')
     result = df.compare_image_in_db(image, appid)
     out = {'status': 'success', 'message': result}
@@ -56,7 +56,7 @@ def compare_image():
 @app.route('/validateimage', methods=['POST'])
 @authorize(request=request)
 def validate_image():
-    image = request.json.get('image')
+    image = (request.form or {}).get('image')
     result = df.get_facial_landmarks(image)
     out = {'status': 'success', 'message': 'image identified'}
 
@@ -66,7 +66,7 @@ def validate_image():
 @app.route('/asynccompareimage', methods=['POST'])
 @authorize(request=request)
 def async_compare_image():
-    image = request.json.get('image')
+    image = (request.form or {}).get('image')
     appid = request.headers.get('app_id')
     result = async_compare.delay(image, appid)
     out = {'status': 'success', 'request_id': result.id}
