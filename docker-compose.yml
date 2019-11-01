@@ -5,6 +5,7 @@ services:
     environment:
       POSTGRES_DB: facerecogdb
       POSTGRES_PORT: 5432
+      POSTGRES_USER: facerecog
     volumes:
         - ./database_data:/var/lib/postgresql/data
         - ./app/db/create_database_tables.sh:/var/local/db/create_database_tables.sh
