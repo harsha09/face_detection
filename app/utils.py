@@ -1,16 +1,12 @@
 import face_recognition as fd
 from PIL import Image
 import numpy as np
-import time
 import dlib
 import face_recognition_models
 import math
-from base64 import b64encode, b64decode, urlsafe_b64decode
+from base64 import urlsafe_b64decode
 from io import BytesIO
-from typing import List, Dict
-from pydantic import BaseModel
-import psycopg2
-from db.database import connect_db, get_db_con
+from db.database import connect_db
 from werkzeug.exceptions import NotFound, BadRequest
 
 
@@ -88,7 +84,7 @@ def get_facial_landmarks(image_data):
     image_data (string): base64 encoded image string
 
     Returns:
-    
+
     """
     compressed_image = compress_base64image(image_data)
     landmarks = fd.face_landmarks(compressed_image)
@@ -104,7 +100,7 @@ def get_facial_landmarks(image_data):
 
 def get_face_encoding(image_data):
     """ """
-    
+
     image_compressed = compress_base64image(image_data)
     landmarks = raw_face_landmarks(image_compressed)
 
@@ -114,24 +110,26 @@ def get_face_encoding(image_data):
     if len(landmarks) > 1:
         raise BadRequest("{} Faces found".format(len(landmarks)))
 
-    face_encoding = [np.array(face_encoder.compute_face_descriptor(image_compressed, l, 1)) for l in landmarks][0]
+    face_encoding = [np.array(face_encoder.compute_face_descriptor(
+        image_compressed, l, 1)) for l in landmarks][0]
 
     return '({})'.format(', '.join([str(i) for i in face_encoding]))
 
 
 @connect_db
-def save_image_in_db(id, image_data, cursor=None, con=None):
+def save_image_in_db(id, image_data, appid, cursor=None, con=None):
     face_encoding = get_face_encoding(image_data)
-    query = 'insert into im_data(id, data) values (%s, %s)'
-    cursor.execute(query, (id, face_encoding))
+    query = 'insert into im_data(id, data, appid) values (%s, %s, %s)'
+    cursor.execute(query, (id, face_encoding, appid))
     con.commit()
     return cursor.rowcount
 
 
 @connect_db
-def compare_image_in_db(image_data, con=None, cursor=None):
+def compare_image_in_db(image_data, appid, con=None, cursor=None):
     face_encoding = get_face_encoding(image_data)
-    query = "select id from im_data where (data <-> '%s'::cube) < 0.5" % (face_encoding)
+    query = "select id from im_data where (data <-> '%s'::cube) < 0.5 and appid = %s" % (
+        face_encoding, appid)
 
     cursor.execute(query)
     record = cursor.fetchone()

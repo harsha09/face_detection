@@ -13,7 +13,7 @@ app = namedtuple('app', ['app_id', 'app_name', 'app_key'])
 def create_app(username, password, app_name, cursor=None, con=None):
 
     query = 'select * from "user" where username=%s and password=crypt(%s, password)'
-    cursor.execute(query, (username, '7b503f8145749243'))
+    cursor.execute(query, (username, password))
     result = cursor.fetchone()
 
     if result:

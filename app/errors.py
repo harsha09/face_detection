@@ -1,9 +1,10 @@
-from flask import Blueprint, Response, jsonify
+from flask import Blueprint, Response
 from werkzeug.exceptions import HTTPException
 import json
 
 
 errors = Blueprint('errors', __name__)
+
 
 @errors.app_errorhandler(HTTPException)
 def catch_http_exception(e):

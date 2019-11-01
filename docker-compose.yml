@@ -1,12 +1,13 @@
 version: '3'
 services:
   db:
-    image: facerecog
+    image: facerecog_db
     environment:
-      POSTGRES_DB: imagedb
+      POSTGRES_DB: facerecogdb
+      POSTGRES_PORT: 5432
     volumes:
-        # - ./database:/docker-entrypoint-initdb.d
         - ./database_data:/var/lib/postgresql/data
+        - ./app/db/create_database_tables.sh:/var/local/db/create_database_tables.sh
     ports:
       - 5432:5432
   rabbitmq:
@@ -14,3 +15,34 @@ services:
     ports:
       - 5672:5672
       - 15672:15672
+  app:
+    image: facerecog_app
+    command: gunicorn -w 4 -b 0.0.0.0:8000 facedetection:app
+    environment:
+      RABBITMQ_PORT: 5672
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: facerecogdb
+      DB_HOST: db
+      DEBUG: "False"
+    ports:
+      - 8000:8000
+    depends_on:
+      - db
+    links:
+      - rabbitmq
+    volumes:
+      - ./app:/home/facerecog/app
+  worker:
+    image: facerecog_app
+    command: celery worker -A facedetection.celery --loglevel=info
+    environment:
+      RABBITMQ_PORT: 5672
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: facerecogdb
+      DB_HOST: db
+    depends_on:
+      - db
+    links:
+      - rabbitmq
+    volumes:
+      - ./app:/home/facerecog/app
