@@ -62,7 +62,7 @@ def _trim_css_to_bounds(css, image_shape):
 
 
 def raw_face_landmarks(face_image, model="large"):
-    face_locations = face_detector(face_image, 1)
+    face_locations = face_detector(face_image, 0.8)
     pose_predictor = pose_predictor_68_point
 
     if model == "small":
@@ -128,6 +128,42 @@ def get_face_encoding(image_data):
     return '({})'.format(', '.join([str(i) for i in face_encoding]))
 
 
+def determine_eye_blink(facial_landmark):
+    ear_func = lambda eye: (abs(eye[1] - eye[5]) + abs(eye[2] - eye[4])) / 2 * abs(eye[0] - eye[3])
+    left_ear = ear_func(facial_landmark.get('left_eye'))
+    right_ear = ear_func(facial_landmark.get('right_ear'))
+
+    if (left_ear + right_ear) / 2.0 < 0.28:
+        return 'close'
+
+    return 'open'
+
+
+@connect_db
+def compare_live_image(images, appid):
+    facial_landmarks = [get_facial_landmarks(i) for i in images]
+    found_pattern = '-'.join([determine_eye_blink(i) for i in facial_landmarks])
+
+    opened_eye_index = 0
+
+    try:
+        opened_eye_index = found_pattern.index('open')
+    except ValueError as ve:
+        raise NotFound("No image with open eye found")
+
+    face_encoding = get_face_encoding(images[opened_eye_index])
+    query = "select id from im_data where (data <-> '%s'::cube) < 0.5 and appid = '%s'" % (
+        face_encoding, appid)
+
+    cursor.execute(query)
+    record = cursor.fetchone()
+
+    if not record:
+        raise NotFound("No image Found in database")
+
+    return record[0], found_pattern
+
+
 @connect_db
 def save_image_in_db(id, image_data, appid, cursor=None, con=None):
     face_encoding = get_face_encoding(image_data)
@@ -150,3 +186,4 @@ def compare_image_in_db(image_data, appid, con=None, cursor=None):
         raise NotFound("No image Found in database")
 
     return record[0]
+

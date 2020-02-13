@@ -61,6 +61,22 @@ def compare_image():
     return jsonify(out)
 
 
+@app.route('/comparelive', methods=['POST'])
+@authorize(request=request)
+def compare_live():
+    request_data = df.get_request_data(request)
+    images = request_data.get('images')
+    pattern = request_data.get('pattern', 'open-close-open')
+
+    if (not images) or (not isinstance(images, list)):
+        raise BadRequest('Invalid request body. List of images shoud be specified.')
+
+    result, found_pattern = df.compare_live_image(images, request.headers.get('app_id'))
+    out = {'status': 'success', 'message': result, 'found_pattern': found_pattern}
+
+    return jsonify(out)    
+
+
 @app.route('/validateimage', methods=['POST'])
 @authorize(request=request)
 def validate_image():
@@ -70,6 +86,7 @@ def validate_image():
         raise BadRequest('Invalid request body. image shoud be specified.')
 
     result = df.get_facial_landmarks(image)
+
     out = {'status': 'success', 'message': 'image identified'}
 
     return jsonify(out)
