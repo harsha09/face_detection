@@ -62,7 +62,7 @@ def _trim_css_to_bounds(css, image_shape):
 
 
 def raw_face_landmarks(face_image, model="large"):
-    face_locations = face_detector(face_image, 0.8)
+    face_locations = face_detector(face_image, 1)
     pose_predictor = pose_predictor_68_point
 
     if model == "small":
@@ -128,26 +128,38 @@ def get_face_encoding(image_data):
     return '({})'.format(', '.join([str(i) for i in face_encoding]))
 
 
-def determine_eye_blink(facial_landmark):
-    ear_func = lambda eye: (abs(eye[1] - eye[5]) + abs(eye[2] - eye[4])) / 2 * abs(eye[0] - eye[3])
-    left_ear = ear_func(facial_landmark.get('left_eye'))
-    right_ear = ear_func(facial_landmark.get('right_ear'))
+def eu_dist(a, b):
+    return np.linalg.norm(np.array(a) - np.array(b))
 
-    if (left_ear + right_ear) / 2.0 < 0.28:
+
+def eye_aspect_ratio(eye):
+    return (eu_dist(eye[1], eye[5]) + eu_dist(eye[2], eye[4])) / (2 * eu_dist(eye[0], eye[3]) )
+
+
+def determine_eye_blink(facial_landmark):
+
+    left_ear = eye_aspect_ratio(facial_landmark.get('left_eye'))
+    right_ear = eye_aspect_ratio(facial_landmark.get('right_eye'))
+
+    if (left_ear + right_ear) / 2.0 < 0.26:
         return 'close'
 
     return 'open'
 
 
 @connect_db
-def compare_live_image(images, appid):
-    facial_landmarks = [get_facial_landmarks(i) for i in images]
-    found_pattern = '-'.join([determine_eye_blink(i) for i in facial_landmarks])
+def compare_live_image(images, appid, con=None, cursor=None):
+    facial_landmarks = [get_facial_landmarks(i)[0] for i in images]
+
+    pattern = '-'.join([determine_eye_blink(i) for i in facial_landmarks])
+
+    if 'close' not in pattern:
+        raise Exception('No Image found with closed eye')
 
     opened_eye_index = 0
 
     try:
-        opened_eye_index = found_pattern.index('open')
+        opened_eye_index = pattern.index('open')
     except ValueError as ve:
         raise NotFound("No image with open eye found")
 
@@ -161,7 +173,7 @@ def compare_live_image(images, appid):
     if not record:
         raise NotFound("No image Found in database")
 
-    return record[0], found_pattern
+    return record[0], pattern
 
 
 @connect_db

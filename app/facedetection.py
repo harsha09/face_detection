@@ -71,8 +71,8 @@ def compare_live():
     if (not images) or (not isinstance(images, list)):
         raise BadRequest('Invalid request body. List of images shoud be specified.')
 
-    result, found_pattern = df.compare_live_image(images, request.headers.get('app_id'))
-    out = {'status': 'success', 'message': result, 'found_pattern': found_pattern}
+    result, pattern = df.compare_live_image(images, request.headers.get('app_id'))
+    out = {'status': 'success', 'message': result, 'pattern': pattern}
 
     return jsonify(out)    
 
