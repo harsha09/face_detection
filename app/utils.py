@@ -110,7 +110,7 @@ def get_facial_landmarks(image_data):
     return landmarks
 
 
-def get_face_encoding(image_data):
+def get_face_encoding(image_data, return_str=True):
     """ """
 
     image_compressed = compress_base64image(image_data)
@@ -125,11 +125,26 @@ def get_face_encoding(image_data):
     face_encoding = [np.array(face_encoder.compute_face_descriptor(
         image_compressed, l, 1)) for l in landmarks][0]
 
-    return '({})'.format(', '.join([str(i) for i in face_encoding]))
+    if return_str:
+        return '({})'.format(', '.join([str(i) for i in face_encoding]))
+
+    return face_encoding
 
 
 def eu_dist(a, b):
     return np.linalg.norm(np.array(a) - np.array(b))
+
+
+def compare_dp_cam_images(dp, cam_pic):
+    dp_face_encoding = get_face_encoding(dp, return_str=False)
+    cam_face_encoding = get_face_encoding(cam_pic, return_str=False)
+
+    distance = np.linalg.norm([dp_face_encoding] - cam_face_encoding, axis=1)
+
+    if distance <= 0.55:
+        return 'match'
+    else:
+        return 'nomatch'
 
 
 def eye_aspect_ratio(eye):

@@ -74,7 +74,23 @@ def compare_live():
     result, pattern = df.compare_live_image(images, request.headers.get('app_id'))
     out = {'status': 'success', 'message': result, 'pattern': pattern}
 
-    return jsonify(out)    
+    return jsonify(out)
+
+
+@app.route('/comparedpcamimages', methods=['POST'])
+@authorize(request=request)
+def compare_dp_cam_images():
+    request_data = df.get_request_data(request)
+    dp = request_data.get('display_picture')
+    cam_pic = request_data.get('cam_picture')
+
+    if (not dp) or (not cam_pic):
+        raise BadRequest('Invalid request body. display_picture and cam_picture should be sent.')
+
+    result = df.compare_dp_cam_images(dp, cam_pic)
+    out = {'status': 'success', 'message': result}
+
+    return jsonify(out)
 
 
 @app.route('/validateimage', methods=['POST'])
