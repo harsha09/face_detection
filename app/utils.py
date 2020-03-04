@@ -143,8 +143,8 @@ def compare_dp_cam_images(dp, cam_pic):
 
     if distance <= 0.55:
         return 'match'
-    else:
-        return 'nomatch'
+
+    raise BadRequest('nomatch')
 
 
 def eye_aspect_ratio(eye):
