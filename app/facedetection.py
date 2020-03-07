@@ -47,6 +47,16 @@ def store_image():
     return jsonify(out)
 
 
+@app.route('/deleteimage/<string:image_id>', methods=['DELETE'])
+@authorize(request=request)
+def delete_image(image_id):
+    appid = request.headers.get('app_id')
+    cnt = df.delete_image(image_id, appid)
+    out = {'statu': 'success',
+    'message': 'image {} has been deleted.'.format(image_id)}
+    return jsonify(out)
+
+
 @app.route('/compareimage', methods=['POST'])
 @authorize(request=request)
 def compare_image():

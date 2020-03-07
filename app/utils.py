@@ -201,6 +201,18 @@ def save_image_in_db(id, image_data, appid, cursor=None, con=None):
 
 
 @connect_db
+def delete_image(image_id, appid, cursor=None, con=None):
+    query = 'delete from im_data where appid = %s and id = %s'
+    cursor.execute(query, (appid, image_id))
+    con.commit()
+
+    if not cursor.rowcount:
+        raise NotFound('Image with id {} not found'.format(image_id))
+
+    return cursor.rowcount
+
+
+@connect_db
 def compare_image_in_db(image_data, appid, con=None, cursor=None):
     face_encoding = get_face_encoding(image_data)
     query = "select id from im_data where (data <-> '%s'::cube) < 0.5 and appid = '%s'" % (
