@@ -52,7 +52,7 @@ def store_image():
 def delete_image(image_id):
     appid = request.headers.get('app_id')
     cnt = df.delete_image(image_id, appid)
-    out = {'statu': 'success',
+    out = {'status': 'success',
     'message': 'image {} has been deleted.'.format(image_id)}
     return jsonify(out)
 
