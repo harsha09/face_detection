@@ -64,6 +64,7 @@ def delete_images():
     image_ids = []
     try:
         image_ids = df.get_request_data(request).get('images', '').split(',')
+        image_ids = [i.strip() for i in image_ids]
     except AttributeError as ae:
         image_ids = []
 
