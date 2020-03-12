@@ -51,9 +51,25 @@ def store_image():
 @authorize(request=request)
 def delete_image(image_id):
     appid = request.headers.get('app_id')
-    cnt = df.delete_image(image_id, appid)
+    cnt = df.delete_images(image_id, appid)
     out = {'status': 'success',
     'message': 'image {} has been deleted.'.format(image_id)}
+    return jsonify(out)
+
+
+@app.route('/deleteimages', methods=['DELETE'])
+@authorize(request=request)
+def delete_images():
+    appid = request.headers.get('app_id')
+    image_ids = []
+    try:
+        image_ids = df.get_request_data(request).get('images', '').split(',')
+    except AttributeError as ae:
+        image_ids = []
+
+    cnt = df.delete_images(image_ids, appid)
+    out = {'status': 'success',
+    'message': 'images are deleted.'}
     return jsonify(out)
 
 

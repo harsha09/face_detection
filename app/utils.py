@@ -201,13 +201,26 @@ def save_image_in_db(id, image_data, appid, cursor=None, con=None):
 
 
 @connect_db
-def delete_image(image_id, appid, cursor=None, con=None):
+def delete_images(image_id, appid, cursor=None, con=None):
     query = 'delete from im_data where appid = %s and id = %s'
-    cursor.execute(query, (appid, image_id))
+    params = (appid, image_id)
+    error_message = 'Image with id {} not found'.format(image_id)
+
+    if isinstance(image_id, list) and len(image_id) > 0:
+        query = 'delete from im_data where appid = %s and id in %s'
+        params = (appid, tuple(image_id))
+        error_message = 'No Images found to delete'
+    
+    if isinstance(image_id, list) and len(image_id) == 0:
+        query = 'delete from im_data where appid = %s'
+        params = (appid, )
+        error_message = 'No App Found to delete'
+
+    cursor.execute(query, params)
     con.commit()
 
     if not cursor.rowcount:
-        raise NotFound('Image with id {} not found'.format(image_id))
+        raise NotFound(error_message)
 
     return cursor.rowcount
 
